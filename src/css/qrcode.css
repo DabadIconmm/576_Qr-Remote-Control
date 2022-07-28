@@ -1,0 +1,28 @@
+body {
+  padding: 0;
+  margin: 0;
+  height: 100%;
+  width: 100%;
+  background-color: white;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  align-content: center;
+}
+
+#container {
+  padding: 2vh;
+  background-repeat: no-repeat;
+  box-sizing: border-box;
+}
+
+#qrcode {
+  width: 100%;
+  height: 100%;
+}
+
+#qrcode > img {
+  width: 100%;
+  height: 100%;
+}

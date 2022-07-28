@@ -1,0 +1,239 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html>
+  <head>
+    <title>Pruebas SMO</title>
+    <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+    <meta http-equiv="Page-Exit" content="progid:DXImageTransform.Microsoft.Fade(duration=.01)" />
+    <style type="text/css">
+      body {
+        margin: 0;
+        padding: 0;
+      }
+    </style>
+  </head>
+  <body style="background-color: #333">
+    <!-- El iframe, debemos cambiarle el src desde javascript, cada vez será uno, así centralizamos todos los datos que vayan cambiando -->
+    <iframe id="smo_maqueta" src="" frameborder="0" marginwidth="0" marginheight="0" scrolling="no" allowTransparency="true"></iframe>
+
+    <!-- Entorno que simula las acciones del player. -->
+    <script type="text/javascript">
+      // Objeto Dnv, es necesario, guarda todas las funciones que sirven para comunicarse con los SMO
+      var Dnv = Dnv || {};
+
+      // https://svrdnv4.iconmultimedia.com/HTML5/736055/index.html?
+      var iframeSrc = "index.html?";
+      var iframeID = "smo_maqueta";
+      var anchuraSMO = "1280";
+      var alturaSMO = "720";
+      var ModoPresentacion = 5;
+
+      // FlashVar que deben llegarle siempre
+      iframeSrc += "ModoPresentacion=" + ModoPresentacion; // 3-> Editor; 5-> Produccion
+      iframeSrc += "&RelojMaestro=1"; // ¿Tiene el control de la duración?
+      iframeSrc += "&Lang=ES"; // Nemónico del idioma en el que queremos ver funcionando el SMO
+      iframeSrc += "&locale=es_ES@ES"; // Información del idioma y el país em el que se tiene que mostar el SMO con el siguiente formato language_territory@country. En principio con la variable lang es suficiente, esto vendrá especificado en los requisitos del SMO
+      iframeSrc += "&UserUrl="; // URL seleccionada por el usuario, si procede. Si no, llegará vacía
+      iframeSrc += "&idSmo=" + iframeID; // ID del iframe en el que cargamos el SMO
+      iframeSrc += "&ancho=" + anchuraSMO; // Ancho de la capa en la que ponemos el SMO, el SMO debería adaptarse al que le demos
+      iframeSrc += "&alto=" + alturaSMO; // Alto de la capa en la que ponemos el SMO, el SMO debería adaptarse al que le demos
+      // iframeSrc += "&CurrentPlantilla=1009647"; // Código de la plantilla en la que se encuentra la capa (código de la tabla plantillas)
+
+      /* -- TIPO DE PLAYER -- */
+      //En SoC y en Android (LowPower = true)
+      iframeSrc += "&LowPower=true";
+
+      // Específicas de cada SMO, deben empezar por &
+
+      /* QR REMOTE CONTROL */
+      /* https://acceso.denevacuatro.com/HTML5/736433/index.html?
+          ModoPresentacion=3
+          &FgColor=%23000000
+          &ObjectIdSalida=%5BSalida.Properties.ObjectID%5D
+          &RefreshTime=60
+          &RemoteControlIP=acceso.denevacuatro.com
+          &ServiceMethod=remoteControl.aspx
+          &WebServiceURLMaster=%5BSalida.Settings.WebServiceURLMaster%5D
+          &CurrentPlantilla=4288866
+          &RelojMaestro=0
+          &Lang=ES
+          &editmode=4
+          &ancho=280
+          &alto=280
+          &locale=@ES
+          &idSmo=elmnt-QRPlayerControl-2smoIframe */
+
+      iframeSrc += "&FgColor=000000";
+      iframeSrc += "&ObjectIdSalida=4258475";
+      iframeSrc += "&RefreshTime=60";
+      iframeSrc += "&RemoteControlIP=acceso.denevacuatro.com";
+      iframeSrc += "&ServiceMethod=remoteControl.aspx";
+      iframeSrc += "&WebServiceURLMaster=http://pts.denevacuatro.com/WSResources/RemoteResources.asmx";
+      iframeSrc += "&CurrentPlantilla=4288866";
+      iframeSrc += "&editmode=4";
+      /* FIN QR REMOTE CONTROL */
+
+      //Creacion iframe
+      window.addEventListener("load", function () {
+        var smoIframe = document.getElementById(iframeID);
+
+        // Le damos el SRC al iframe
+        smoIframe.src = iframeSrc;
+
+        // le damos el tamaño
+        smoIframe.style.width = anchuraSMO + "px";
+        smoIframe.setAttribute("width", anchuraSMO);
+
+        smoIframe.style.height = alturaSMO + "px";
+        smoIframe.setAttribute("height", alturaSMO);
+      });
+
+      /* --- DATASOURCE --- */
+      // En caso de usar datasource:
+
+      var currentPlaying = 0; // utilizaremos este index para simular el envío de datos cada cierto tiempo
+
+      var datasourceInterval = 5; // Segundos entre cada envío de datos al SMO
+
+      // Función que devuelve los datos que enviaremos al SMO
+      function getTestData() {
+        // Array con los diferentes XML del dataSource
+        // Añadiremos varios con diferentes datos para simular lo que le mandaría el player al player
+        var datasources = ["", "", ""];
+
+        var ret = datasources[currentPlaying];
+
+        // Actualizamos el current para el siguiente envío, al usar el % conseguimos que, cuando sea igual al length del datasources, se ponga a 0 y vuelva a empezar
+        currentPlaying = ++currentPlaying % datasources.length;
+
+        return ret;
+      }
+
+      // Si queremos simular el envío de datos cada cierto tiempo le metemos este interval, en caso contrario, dejaremos que el SMO envíe el SmoEvent.ON_LOAD
+      // var sendDataSourceInterval = setInterval(function () {
+      //     var xmlData = getTestData();
+      //     sendToIframe('SMO.setDatasource', iframeID, {
+      //         xml: xmlData
+      //     });
+
+      // }, datasourceInterval * 1000);
+
+      function stopsendDataSourceInterval() {
+        if (sendDataSourceInterval != undefined) {
+          clearInterval(sendDataSourceInterval);
+        }
+      }
+
+      Dnv.smoCallbacks = {
+        // Cuando reciba el SmoEvent.raise(SmoEvent.ON_LOAD)
+        onSmoLoad: function (idSmo, objData) {
+          /* var objData = getDummyData(); */
+          //console.log(getDateNow() + " Mandamos por primera vez el datasource. \nidSmo: " + idSmo + "\nString del XML: " + objData.xml);
+
+          sendToIframe("SMO.setDatasource", idSmo, objData);
+
+          //console.log(getDateNow() + "Seteamos el interval");
+          setInterval(function () {
+            //console.log(getDateNow() + "Intento enviar el datasource desde el interval")
+            // objData = getDummyData();
+            sendToIframe("SMO.setDatasource", idSmo, objData);
+          }, 5 * 1000);
+        },
+        // Cuando reciba el SmoEvent.raise(SmoEvent.ON_READY)
+        onSmoReady: function (idSmo, objData) {
+          sendToIframe("SMO.start", idSmo);
+        },
+        smoLog: function (idSmo, objData) {
+          try {
+            console.log("smoLog maqueta: \n idSmo: " + idSMO + "\n objData: " + JSON.parse(objData));
+          } catch (e) {}
+        },
+        refreshDatasouce: function (idSmo, objData) {
+          var objData = getDummyData();
+          sendToIframe("SMO.setDatasource", idSmo, objData);
+        },
+        // Cuando reciba el SmoEvent.raise(SmoEvent.ON_NEXT) o el SmoEvent.raise(SmoEvent.ON_FINISH)
+        urlNext: function (idSmo, objData) {
+          try {
+            alert("urlNext solicitado");
+            sendToIframe("SMO.start", idSmo);
+          } catch (e) {
+            console.error(getDateNow() + " (urlNext) " + e.message);
+          }
+        },
+        // Si el SMO necesita acceder a un archivo local como, por ejemplo, "localData.xml"
+        getFile: function (idSmo, url) {
+          // Código, si es necesario...
+        },
+      };
+
+      window.onmessage = function (e) {
+        if (e.data.target) {
+          var targets = e.data.target.split(".");
+          // Mete el window en dos variables??
+          var fn = window;
+          var obj = window;
+          for (var i = 0; i < targets.length; i++) {
+            obj = fn;
+            fn = obj[targets[i]];
+          }
+          //console.log(getDateNow() + " Recibo mensaje de SMO: " + e.data.idSmo + " para: " + e.data.target);
+          fn.call(obj, e.data.idSmo, e.data.objData);
+        }
+      };
+
+      function sendToIframe(target, iframeID, objData) {
+        try {
+          var iframe = document.getElementById(iframeID).contentWindow;
+          //console.log(getDateNow() + " Mando al iframe el objeto:", objData.xml);
+          iframe.postMessage(
+            {
+              target: target,
+              objData: objData,
+            },
+            "*"
+          );
+        } catch (e) {
+          console.error("Error in sendToIframe: " + e);
+        }
+      }
+
+      // Devuelve la fecha en un formato legible
+      function getDateNow() {
+        var ret = "";
+        try {
+          var date = new Date();
+
+          var day = date.getDate();
+          var month = date.getMonth() + 1;
+          var year = date.getFullYear();
+          var hour = date.getHours();
+          var min = date.getMinutes();
+          var sec = date.getSeconds();
+
+          ret = "[" + getFormated(day) + "-" + getFormated(month) + "-" + year + " - " + getFormated(hour) + ":" + getFormated(min) + ":" + getFormated(sec) + "]";
+        } catch (e) {
+          console.log("(getDateNow) " + e.message);
+        }
+
+        return ret;
+      }
+
+      // Devuelve el número en formato string con 2 dígitos, añadiendo el 0 a la izq si fuera necesario.
+      function getFormated(number) {
+        ret = "00";
+        try {
+          ret = number.toString().length == 1 ? "0" + number : number;
+        } catch (e) {
+          console.log("(getFormated) " + e.message);
+        }
+
+        return ret;
+      }
+
+      function getDummyData() {
+        //console.log("DUMMY DATA DE LA MAQUETA!!!");
+        return {};
+      }
+    </script>
+  </body>
+</html>
