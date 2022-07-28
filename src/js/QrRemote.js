@@ -1,8 +1,6 @@
 //URL example -> https://svrdnv4.iconmultimedia.com/WSResources/RemoteResources.asmx/GetKey?id=4053364 -> https:// SMO.vars["RemoteControlIP"] + SMO.vars["WebServiceURLMaster"] + "/GetKey?id=" + SMO.vars["ObjIDSalida"]
-
 //Global Vars
 var key = "";
-var isDraw = false;
 var nombreSMO = "QR Remote Control";
 
 //SmoVars
