@@ -102,12 +102,12 @@ function request(url, method) {
               .replace('<?xml version="1.0" encoding="utf-8"?><string xmlns="http://localhost/">', "")
               .replace("</string>", "")
           );
-          //Parsing response XML & catching dato
+          //Parsing response string to XML
           var parser = new DOMParser();
           var xmlDoc = parser.parseFromString(rpl, "text/xml");
           var item = xmlDoc.getElementsByTagName("item")[0];
 
-          //Comprobación que tenemos el atributo "inUse"
+          //Comprobación que tenemos el atributo "inUse" key
           if (item.getAttribute("inUse")) {
             var isUse = item.getAttribute("inUse"); //IMPORTANT! Return String!!
             //Hide QR & show an image with errors & information
