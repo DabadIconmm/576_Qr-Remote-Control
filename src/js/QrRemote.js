@@ -107,7 +107,7 @@ function request(url, method) {
           if (item.getAttribute("inUse")) {
             var isUse = item.getAttribute("inUse"); //IMPORTANT! Return String!!
             //Hide QR & show an image with errors & information
-            if (key != item.getAttribute("key") && isUse != "True") {
+            if (isUse != "True") {
               Dnv.smoCallbacks.smoLog("[SMO " + nombreSMO + "] (request) Creamos NUEVO QR", Dnv.LogLevel.Info);
               key = item.getAttribute("key");
               var body = document.querySelector("body");
