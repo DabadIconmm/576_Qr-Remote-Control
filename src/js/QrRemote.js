@@ -3,9 +3,7 @@
 //Global Vars
 var key = "";
 var isDraw = false;
-var xhr;
 var nombreSMO = "QR Remote Control";
-var dommie = "http://wwww.denevads.es";
 
 //SmoVars
 function defaultVars() {
@@ -39,8 +37,9 @@ function initSMO() {
       haveParameters(SMO.vars["WebServiceURLMaster"], SMO.vars["ObjectIdSalida"]);
     } else {
       Dnv.smoCallbacks.smoLog("[SMO " + nombreSMO + "] (initSMO) Modo Presentacion: " + SMO.vars["ModoPresentacion"] + ". Utilizamos Url Predef.", Dnv.LogLevel.Info);
-      var url = "http://wwww.denevads.es";
-      makeQR(url);
+      /* var url = "http://wwww.denevads.es";
+      makeQR(url); */
+      makeQRRemote(false);
     }
 
     sizing();
@@ -66,9 +65,8 @@ function haveParameters(param1, param2) {
       }, 5000);
     } else {
       Dnv.smoCallbacks.smoLog("[SMO " + nombreSMO + "] (haveParameters) No params, pintamos URL predef.", Dnv.LogLevel.Info);
-      var url = "http://www.denevads.es";
       console.log("No params. Pintamos QR por defecto.");
-      makeQR(url);
+      makeQRRemote(false);
     }
   } catch (e) {
     console.error("[SMO " + nombreSMO + "] (haveParameters)  ERROR." + e.message);
@@ -80,9 +78,9 @@ function haveParameters(param1, param2) {
 function request(url, method) {
   Dnv.smoCallbacks.smoLog("[SMO " + nombreSMO + "] (request) Pedimos credenciales.", Dnv.LogLevel.Info);
   if (window.XMLHttpRequest) {
-    xhr = new XMLHttpRequest();
+    var xhr = new XMLHttpRequest();
   } else {
-    xhr = new ActiveXObject("Microsoft.XMLHTTP");
+    var xhr = new ActiveXObject("Microsoft.XMLHTTP");
   }
 
   try {
@@ -126,12 +124,12 @@ function request(url, method) {
               body.style.backgroundColor = "transparent";
             }
           } else {
-            makeQR(dommie);
+            makeQRRemote(false);
             Dnv.smoCallbacks.smoLog("[SMO " + nombreSMO + "] (request) No recoge datos del uso de la clave del XML. Pintamos web por defecto.", Dnv.LogLevel.Info);
             console.error("No recoge datos del uso de la clave del XML. Pintamos web por defecto.");
           }
         } else if (xhr.readyState == 4 && xhr.status == 0) {
-          makeQR(dommie);
+          makeQRRemote(false);
         } else {
           console.info("State download XML.: " + this.readyState + "\n status: " + this.status);
           Dnv.smoCallbacks.smoLog("[SMO " + nombreSMO + "] (getJson) State download XML.: " + this.readyState + ", status: " + this.status + ".", Dnv.LogLevel.Info);
@@ -139,7 +137,7 @@ function request(url, method) {
       } catch (error) {
         Dnv.smoCallbacks.smoLog("[SMO " + nombreSMO + "] (request) Error en la request, error: " + error.message + ". Pintamos QR con url predef.", Dnv.LogLevel.Error);
         console.info("[SMO " + nombreSMO + "] (request) Error en la request, error: " + error.message + ". Pintamos QR con url predef.");
-        makeQR(dommie);
+        makeQRRemote(false);
       }
     };
 
@@ -149,7 +147,7 @@ function request(url, method) {
   } catch (error) {
     Dnv.smoCallbacks.smoLog("[SMO " + nombreSMO + "] (request) Error en la request, error: " + error.message + ". Pintamos QR con url predef.", Dnv.LogLevel.Error);
     console.info("[SMO " + nombreSMO + "] (request) Error en la request, error: " + error.message + ". Pintamos QR con url predef.");
-    makeQR(dommie);
+    makeQRRemote(false);
   }
 }
 
@@ -165,34 +163,26 @@ function sizing() {
 /* Create QR URL of final QR
 -> https://svrdnv4.iconmultimedia.com/denevacuatro/main/remoteControl/remoteControl.aspx?key=07065734-95BF-45F5-A486-C2440CF0CA9B */
 function makeQRRemote(el) {
-  if (!SMO.vars["RemoteControlIP"]) {
-    var param = SMO.vars["WebServiceURLMaster"].split("WSResources")[0];
-    var url = param + "denevacuatro/main/remoteControl/remoteControl.aspx?key=" + el; //key got xml
-    Dnv.smoCallbacks.smoLog("[SMO " + nombreSMO + "] (makeQRRemote) QR con URL: " + url + ".", Dnv.LogLevel.Info);
+  document.getElementById("qrcode").innerHTML = "";
+  var qrcode = new QRCode(document.getElementById("qrcode"), {
+    width: 1080,
+    height: 1080,
+  });
+  if (el == false) {
+    Dnv.smoCallbacks.smoLog("[SMO " + nombreSMO + "] (makeQRRemote) QR con URL: http://wwww.denevads.es", Dnv.LogLevel.Info);
+    qrcode.makeCode("http://wwww.denevads.es"); // dentro del () introducir el valor del QR
   } else {
-    var url = "http://" + SMO.vars["RemoteControlIP"] + "/denevacuatro/main/remoteControl/remoteControl.aspx?key=" + el;
-    Dnv.smoCallbacks.smoLog("[SMO " + nombreSMO + "] (makeQRRemote) QR con URL: " + url + ".", Dnv.LogLevel.Info);
+    if (!SMO.vars["RemoteControlIP"]) {
+      var param = SMO.vars["WebServiceURLMaster"].split("WSResources")[0];
+      var url = param + "denevacuatro/main/remoteControl/remoteControl.aspx?key=" + el; //key got xml
+      Dnv.smoCallbacks.smoLog("[SMO " + nombreSMO + "] (makeQRRemote) QR con URL: " + url + ".", Dnv.LogLevel.Info);
+    } else {
+      var url = "http://" + SMO.vars["RemoteControlIP"] + "/denevacuatro/main/remoteControl/remoteControl.aspx?key=" + el;
+      Dnv.smoCallbacks.smoLog("[SMO " + nombreSMO + "] (makeQRRemote) QR con URL: " + url + ".", Dnv.LogLevel.Info);
+    }
+    // http://acceso.denevacuatro.com/denevacuatro/main/remoteControl/remoteControl.aspx
+    qrcode.makeCode(url); // dentro del () introducir el valor del QR
   }
-  // http://acceso.denevacuatro.com/denevacuatro/main/remoteControl/remoteControl.aspx
-
-  document.getElementById("qrcode").innerHTML = "";
-
-  var qrcode = new QRCode(document.getElementById("qrcode"), {
-    width: 1080,
-    height: 1080,
-  });
-  qrcode.makeCode(url); // dentro del () introducir el valor del QR
-}
-
-function makeQR(el) {
-  Dnv.smoCallbacks.smoLog("[SMO " + nombreSMO + "] (makeQRRemote) QR con URL: " + el + ".", Dnv.LogLevel.Info);
-  document.getElementById("qrcode").innerHTML = "";
-
-  var qrcode = new QRCode(document.getElementById("qrcode"), {
-    width: 1080,
-    height: 1080,
-  });
-  qrcode.makeCode(el); // dentro del () introducir el valor del QR
 }
 
 //Eliminate error caracters of the URL
