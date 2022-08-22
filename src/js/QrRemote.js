@@ -1,4 +1,7 @@
 //URL example -> https://svrdnv4.iconmultimedia.com/WSResources/RemoteResources.asmx/GetKey?id=4053364 -> https:// SMO.vars["RemoteControlIP"] + SMO.vars["WebServiceURLMaster"] + "/GetKey?id=" + SMO.vars["ObjIDSalida"]
+//https://svrdnv4.iconmultimedia.com/dscontrol/ServicioAvisosWeb/RemoteControl/GetKey?id=4258702
+//"https://" + SMO.vars["RemoteControlIP"] + "/dscontrol/ServicioAvisosWeb/RemoteControl/GetKey?"  + SMO.vars["id"]
+
 //Global Vars
 var key = "";
 var nombreSMO = "QR Remote Control";
@@ -10,6 +13,7 @@ function defaultVars() {
   SMO.vars["Lang"] ? "" : (SMO.vars["Lang"] = "ES");
 
   //Especificas
+  SMO.vars["id"] ? "" : (SMO.vars["id"] = "4258702");
   SMO.vars["RemoteControlIP"] ? "" : (SMO.vars["RemoteControlIP"] = "svrdnv4.iconmultimedia.com");
   SMO.vars["ServiceMethod"] ? "" : (SMO.vars["ServiceMethod"] = "remoteControl.aspx");
   SMO.vars["WebServiceURLMaster"] ? "" : (SMO.vars["WebServiceURLMaster"] = "WSResources/RemoteResources.asmx");
@@ -54,7 +58,10 @@ function haveParameters(param1, param2) {
   Dnv.smoCallbacks.smoLog("[SMO " + nombreSMO + "] (haveParameters) Comprobamos parámetros.", Dnv.LogLevel.Info);
   try {
     if (param1 && param2) {
-      var url = SMO.vars["WebServiceURLMaster"] + "/GetKey?id=" + SMO.vars["ObjectIdSalida"]; //Salida
+      /* var url = SMO.vars["WebServiceURLMaster"] + "/GetKey?id=" + SMO.vars["ObjectIdSalida"]; //Salida */
+      /* Ruta por verificar
+      var url = "https://" + SMO.vars["RemoteControlIP"] + "/dscontrol/ServicioAvisosWeb/RemoteControl/GetKey?" + SMO.vars["id"]; */
+      var url = "https://svrdnv4.iconmultimedia.com/dscontrol/ServicioAvisosWeb/RemoteControl/GetKey?id=" + SMO.vars["id"];
       Dnv.smoCallbacks.smoLog("[SMO " + nombreSMO + "] (haveParameters) URL: " + url + ".", Dnv.LogLevel.Info);
       request(url, "GET");
       //setTimeout() 5s
@@ -85,52 +92,32 @@ function request(url, method) {
     xhr.onreadystatechange = function () {
       try {
         if (xhr.readyState == 4 && xhr.status == 200) {
-          console.info("State download XML.: " + this.readyState + "\n status: " + this.status + ". XML download.");
+          console.info("State download JSON: " + this.readyState + "\n status: " + this.status + ". JSON download.");
           Dnv.smoCallbacks.smoLog(
-            "[SMO " + nombreSMO + "] (request) State download XML.: " + this.readyState + ", status: " + this.status + ". XML download: " + JSON.stringify(data),
+            "[SMO " + nombreSMO + "] (request) State download JSON: " + this.readyState + ", status: " + this.status + ". JSON download: " + JSON.stringify(data),
             Dnv.LogLevel.Info
           );
-          var data = xhr.responseXML.documentElement.textContent;
-          //Getting XML & Eliminate error caracters response
-          var rpl = unescapeHTML(
-            data
-              .replace(/(\r\n|\n|\r)/gm, "")
-              .replace('<?xml version="1.0" encoding="utf-8"?><string xmlns="http://localhost/">', "")
-              .replace("</string>", "")
-          );
-          //Parsing response string to XML
-          var parser = new DOMParser();
-          var xmlDoc = parser.parseFromString(rpl, "text/xml");
-          var item = xmlDoc.getElementsByTagName("item")[0];
+          var data = JSON.parse(xhr.response);
 
-          //Comprobación que tenemos el atributo "inUse" key
-          if (item.getAttribute("inUse")) {
-            var isUse = item.getAttribute("inUse"); //IMPORTANT! Return String!!
-            //Hide QR & show an image with errors & information
-            if (isUse != "True") {
-              Dnv.smoCallbacks.smoLog("[SMO " + nombreSMO + "] (request) Creamos NUEVO QR", Dnv.LogLevel.Info);
-              key = item.getAttribute("key");
-              var body = document.querySelector("body");
-              body.style.backgroundColor = "white";
-              makeQRRemote(key);
-            }
+          if (data.inUse == "true") {
+            //Si esta en uso, NO QR
+            Dnv.smoCallbacks.smoLog("[SMO " + nombreSMO + "] (request) La clave ESTA EN USO", Dnv.LogLevel.Info);
+            document.getElementById("qrcode").innerHTML = "";
+            var body = document.querySelector("body");
+            body.style.backgroundColor = "transparent";
+          }
 
-            if (isUse == "True") {
-              Dnv.smoCallbacks.smoLog("[SMO " + nombreSMO + "] (request) La clave ESTA EN USO", Dnv.LogLevel.Info);
-              document.getElementById("qrcode").innerHTML = "";
-              var body = document.querySelector("body");
-              body.style.backgroundColor = "transparent";
-            }
-          } else {
-            makeQRRemote(false);
-            Dnv.smoCallbacks.smoLog("[SMO " + nombreSMO + "] (request) No recoge datos del uso de la clave del XML. Pintamos web por defecto.", Dnv.LogLevel.Info);
-            console.error("No recoge datos del uso de la clave del XML. Pintamos web por defecto.");
+          if (data.inUse == "false") {
+            Dnv.smoCallbacks.smoLog("[SMO " + nombreSMO + "] (request) Creamos NUEVO QR", Dnv.LogLevel.Info);
+            var body = document.querySelector("body");
+            body.style.backgroundColor = "white";
+            makeQRRemote(data.key);
           }
         } else if (xhr.readyState == 4 && xhr.status == 0) {
           makeQRRemote(false);
         } else {
-          console.info("State download XML.: " + this.readyState + "\n status: " + this.status);
-          Dnv.smoCallbacks.smoLog("[SMO " + nombreSMO + "] (getJson) State download XML.: " + this.readyState + ", status: " + this.status + ".", Dnv.LogLevel.Info);
+          console.info("State download JSON: " + this.readyState + "\n status: " + this.status);
+          Dnv.smoCallbacks.smoLog("[SMO " + nombreSMO + "] (getJson) State download JSON: " + this.readyState + ", status: " + this.status + ".", Dnv.LogLevel.Info);
         }
       } catch (error) {
         Dnv.smoCallbacks.smoLog("[SMO " + nombreSMO + "] (request) Error en la request, error: " + error.message + ". Pintamos QR con url predef.", Dnv.LogLevel.Error);
